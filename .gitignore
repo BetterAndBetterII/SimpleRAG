@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+backend/test.db
+frontend/node_modules/
