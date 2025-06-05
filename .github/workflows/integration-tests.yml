@@ -1,0 +1,98 @@
+name: Integration Tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_run:
+    workflows: ["Backend Tests", "Frontend Tests"]
+    types:
+      - completed
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
+    
+    services:
+      postgres:
+        image: ankane/pgvector:latest
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: simplerag
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.11'
+        
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Setup pnpm
+      uses: pnpm/action-setup@v3
+      with:
+        version: 10
+        
+    - name: Install backend dependencies
+      run: |
+        cd backend
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        
+    - name: Install frontend dependencies
+      run: |
+        cd frontend
+        pnpm install
+        
+    - name: Create backend .env file
+      run: |
+        cd backend
+        echo "DATABASE_URL=postgresql://postgres:postgres@localhost:5432/simplerag" > .env
+        echo "POSTGRES_USER=postgres" >> .env
+        echo "POSTGRES_PASSWORD=postgres" >> .env
+        echo "POSTGRES_DB=simplerag" >> .env
+        echo "POSTGRES_HOST=localhost" >> .env
+        echo "POSTGRES_PORT=5432" >> .env
+        echo "DEBUG=True" >> .env
+        echo "API_PREFIX=/api" >> .env
+        echo "BACKEND_CORS_ORIGINS=[\"http://localhost:3000\"]" >> .env
+        echo "EMBEDDING_MODEL=text-embedding-ada-002" >> .env
+        
+    - name: Start backend server
+      run: |
+        cd backend
+        nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 &
+        sleep 5  # 等待服务器启动
+        
+    - name: Start frontend server
+      run: |
+        cd frontend
+        nohup pnpm dev --port 3000 &
+        sleep 5  # 等待服务器启动
+        
+    - name: Install integration test dependencies
+      run: |
+        cd tests/integration
+        pip install -r requirements.txt
+        playwright install chromium
+        
+    - name: Run integration tests
+      run: |
+        cd tests/integration
+        pytest test_api.py test_ui.py -v
+
