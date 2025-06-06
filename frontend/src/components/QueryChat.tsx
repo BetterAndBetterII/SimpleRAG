@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from './ui/card';
 import { Textarea } from './ui/textarea';
 import { queryApi } from '../services/api';
-import { QueryResponse } from '../types';
+import type { QueryResponse } from '../types';
 
 export function QueryChat() {
   const [query, setQuery] = useState('');

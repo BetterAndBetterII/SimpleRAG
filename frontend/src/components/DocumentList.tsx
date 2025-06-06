@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Trash2, FileText, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Document } from '../types';
+import type { Document } from '../types';
 import { documentsApi } from '../services/api';
 
 interface DocumentListProps {

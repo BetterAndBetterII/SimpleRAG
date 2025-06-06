@@ -3,7 +3,7 @@ import { Upload, FileText, Check, AlertCircle } from 'lucide-react';
 import { Button } from './ui/button';
 import { Card, CardContent } from './ui/card';
 import { documentsApi } from '../services/api';
-import { Document } from '../types';
+import type { Document } from '../types';
 
 interface FileUploadProps {
   onUploadSuccess: (document: Document) => void;

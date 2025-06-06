@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FileUpload } from './components/FileUpload';
 import { DocumentList } from './components/DocumentList';
 import { QueryChat } from './components/QueryChat';
-import { Document } from './types';
+import type { Document } from './types';
 import { documentsApi } from './services/api';
 
 // 创建 QueryClient 实例
