@@ -56,7 +56,7 @@ class IndexService:
             metadata={
                 "document_id": document.id,
                 "filename": document.filename,
-                **document.metadata
+                **document._metadata
             }
         )
         self.index.insert(llama_document)

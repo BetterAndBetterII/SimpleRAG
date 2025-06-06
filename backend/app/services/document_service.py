@@ -18,7 +18,7 @@ class DocumentService:
         db_document = Document(
             filename=document.filename,
             content=document.content,
-            metadata=document.metadata or {}
+            _metadata=document.metadata or {}
         )
         self.db.add(db_document)
         self.db.commit()
