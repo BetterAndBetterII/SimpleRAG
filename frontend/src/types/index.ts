@@ -3,7 +3,7 @@ export interface Document {
   id: number;
   filename: string;
   content: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
   created_at: string;
   updated_at?: string;
 }
@@ -13,7 +13,7 @@ export interface QuerySourceNode {
   text: string;
   document_id: number;
   score: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 // 查询响应类型
