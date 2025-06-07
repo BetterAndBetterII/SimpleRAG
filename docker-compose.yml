@@ -3,30 +3,67 @@ version: '3.8'
 services:
   backend:
     build: ./backend
+    # image: ghcr.io/betterandbetterii/simplerag/backend:main
     ports:
       - "8000:8000"
     environment:
+      # Database settings
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/simplerag
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=simplerag
       - POSTGRES_HOST=db
       - POSTGRES_PORT=5432
+      
+      # Redis settings
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+      - REDIS_DB=0
+      
+      # Milvus settings
+      - MILVUS_HOST=milvus-standalone
+      - MILVUS_PORT=19530
+      - MILVUS_DB=default
+      
+      # OpenAI settings (需要在.env文件中设置)
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      
+      # Embedding settings
+      - EMBEDDING_API_KEY=${EMBEDDING_API_KEY}
+      - EMBEDDING_BASE_URL=${EMBEDDING_BASE_URL:-https://api.openai.com/v1}
+      - EMBEDDING_MODEL=text-embedding-ada-002
+      - EMBEDDING_DIM=1536
+      - ENABLE_SPARSE_EMBEDDING=false
+      
+      # Text processing settings
+      - CHUNK_SIZE=1000
+      - CHUNK_OVERLAP=200
+      
+      # Reranker settings (可选)
+      - RERANKER_API_KEY=${RERANKER_API_KEY:-}
+      - RERANKER_BASE_URL=${RERANKER_BASE_URL:-}
+      - RERANKER_MODEL=bge-reranker-v2-m3
+      
+      # App settings
       - DEBUG=True
       - API_PREFIX=/api
       - BACKEND_CORS_ORIGINS=["http://localhost:3000", "http://localhost:5173", "http://frontend:3000"]
-      - EMBEDDING_MODEL=text-embedding-ada-002
     depends_on:
       - db
+      - redis
+      - milvus-standalone
     volumes:
       - ./backend:/app
     networks:
       - simplerag-network
 
   frontend:
-    build: ./frontend
+    # build: ./frontend
+    image: ghcr.io/betterandbetterii/simplerag/frontend:main
     ports:
-      - "3000:3000"
+      - "3000:80"
     environment:
       - VITE_API_URL=http://localhost:8000/api
     volumes:
@@ -39,8 +76,8 @@ services:
 
   db:
     image: ankane/pgvector:latest
-    ports:
-      - "5432:5432"
+    # ports:
+    #   - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -50,8 +87,88 @@ services:
     networks:
       - simplerag-network
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - simplerag-network
+    command: redis-server --appendonly yes
+
+  # Milvus dependencies
+  etcd:
+    container_name: milvus-etcd-simplerag
+    image: quay.io/coreos/etcd:v3.5.5
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd-data:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - simplerag-network
+
+  minio:
+    container_name: milvus-minio-simplerag
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - minio-data:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - simplerag-network
+
+  milvus-standalone:
+    container_name: milvus-standalone-simplerag
+    image: milvusdb/milvus:v2.3.3
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+    - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - milvus-data:/var/lib/milvus
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - "etcd"
+      - "minio"
+    networks:
+      - simplerag-network
+
 volumes:
   postgres-data:
+  redis-data:
+  etcd-data:
+  minio-data:
+  milvus-data:
 
 networks:
   simplerag-network:

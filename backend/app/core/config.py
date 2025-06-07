@@ -16,6 +16,37 @@ class Settings(BaseSettings):
     POSTGRES_HOST: str
     POSTGRES_PORT: str
     
+    # Redis settings
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str = ""
+    REDIS_DB: int = 0
+    
+    # Milvus settings
+    MILVUS_HOST: str = "localhost"
+    MILVUS_PORT: int = 19530
+    MILVUS_DB: str = "default"
+    
+    # OpenAI settings
+    OPENAI_API_KEY: str
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    
+    # Embedding settings
+    EMBEDDING_API_KEY: str
+    EMBEDDING_BASE_URL: str = "https://api.openai.com/v1"
+    EMBEDDING_MODEL: str = "text-embedding-ada-002"
+    EMBEDDING_DIM: int = 1536
+    ENABLE_SPARSE_EMBEDDING: bool = False
+    
+    # Text processing settings
+    CHUNK_SIZE: int = 1000
+    CHUNK_OVERLAP: int = 200
+    
+    # Reranker settings (optional)
+    RERANKER_API_KEY: str = ""
+    RERANKER_BASE_URL: str = ""
+    RERANKER_MODEL: str = "bge-reranker-v2-m3"
+    
     # CORS settings
     BACKEND_CORS_ORIGINS: List[AnyHttpUrl] = []
 
@@ -27,11 +58,6 @@ class Settings(BaseSettings):
         elif isinstance(v, (list, str)):
             return v
         raise ValueError(v)
-    
-    # LlamaIndex settings
-    EMBEDDING_MODEL: str = "text-embedding-ada-002"
-    CHUNK_SIZE: int = 1000
-    CHUNK_OVERLAP: int = 200
     
     class Config:
         env_file = ".env"
