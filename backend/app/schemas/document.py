@@ -6,7 +6,7 @@ from pydantic import BaseModel
 class DocumentBase(BaseModel):
     filename: str
     content: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
+    _metadata: Optional[Dict[str, Any]] = None
 
 
 class DocumentCreate(DocumentBase):

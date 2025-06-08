@@ -11,10 +11,11 @@ from llama_index.core import QueryBundle
 from llama_index.core.indices.vector_store import VectorIndexRetriever
 from llama_index.core.postprocessor import SimilarityPostprocessor
 from llama_index.core.vector_stores.types import VectorStoreQueryMode
-from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.storage.docstore.redis import RedisDocumentStore
 from llama_index.vector_stores.milvus import MilvusVectorStore
 from llama_index.postprocessor.jinaai_rerank import JinaRerank
+from app.services.custom.bgem3_sparse import BGEM3SparseEmbeddingFunction
+from app.services.custom.siliconflow_embeddings import SiliconFlowEmbedding
 
 from app.core.config import settings
 from app.models.document import Document
@@ -70,25 +71,34 @@ class IndexService:
             port=settings.MILVUS_PORT,
             db_name=getattr(settings, 'MILVUS_DB', 'default'),
             collection_name=self.milvus_collection,
-            dim=settings.EMBEDDING_DIM,
+            dim=settings.EMB_DIMENSIONS,
             similarity_metric="cosine",
-            enable_sparse=getattr(settings, 'ENABLE_SPARSE_EMBEDDING', False),
+            enable_sparse=settings.ENABLE_SPARSE_EMBEDDING,
+            sparse_embedding_function=BGEM3SparseEmbeddingFunction(),
             index_config={
                 "metric_type": "COSINE",
                 "index_type": "HNSW",
                 "params": {"M": 32, "efConstruction": 200}
+            },
+            sparse_index_config={
+                "metric_type": "IP",
+                "index_type": "SPARSE_INVERTED_INDEX",
+                "params": {"drop_ratio_build": 0.2}
             },
             search_config={"ef": 512}
         )
 
     def _create_ingestion_pipeline(self) -> IngestionPipeline:
         """创建文档摄入管道"""
-        embed_model = OpenAIEmbedding(
-            model=settings.EMBEDDING_MODEL,
+        embed_model = SiliconFlowEmbedding(
             api_key=settings.EMBEDDING_API_KEY,
-            api_base=settings.EMBEDDING_BASE_URL
+            base_url=f"{settings.EMBEDDING_BASE_URL}/embeddings",
+            model=settings.EMBEDDING_MODEL,
+            timeout=30,
+            max_retries=64,
+            dimensions=settings.EMB_DIMENSIONS,
         )
-        
+
         return IngestionPipeline(
             transformations=[
                 SentenceSplitter(

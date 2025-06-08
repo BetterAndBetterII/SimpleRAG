@@ -34,9 +34,9 @@ class Settings(BaseSettings):
     # Embedding settings
     EMBEDDING_API_KEY: str
     EMBEDDING_BASE_URL: str = "https://api.openai.com/v1"
-    EMBEDDING_MODEL: str = "text-embedding-ada-002"
-    EMBEDDING_DIM: int = 1536
-    ENABLE_SPARSE_EMBEDDING: bool = False
+    EMBEDDING_MODEL: str = "bge-m3"
+    EMB_DIMENSIONS: int = 1536
+    ENABLE_SPARSE_EMBEDDING: bool = True
     
     # Text processing settings
     CHUNK_SIZE: int = 1000

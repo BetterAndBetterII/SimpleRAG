@@ -60,8 +60,8 @@ services:
       - simplerag-network
 
   frontend:
-    # build: ./frontend
-    image: ghcr.io/betterandbetterii/simplerag/frontend:main
+    build: ./frontend
+    # image: ghcr.io/betterandbetterii/simplerag/frontend:main
     ports:
       - "3000:80"
     environment:
@@ -76,8 +76,8 @@ services:
 
   db:
     image: ankane/pgvector:latest
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "54332:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=postgres
@@ -139,7 +139,7 @@ services:
 
   milvus-standalone:
     container_name: milvus-standalone-simplerag
-    image: milvusdb/milvus:v2.3.3
+    image: milvusdb/milvus:v2.4.10
     command: ["milvus", "run", "standalone"]
     security_opt:
     - seccomp:unconfined

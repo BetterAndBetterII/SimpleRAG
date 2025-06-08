@@ -1,7 +1,7 @@
 import os
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
-import markitdown
+from markitdown import MarkItDown
 
 from app.models.document import Document
 from app.schemas.document import DocumentCreate
@@ -12,20 +12,22 @@ class DocumentService:
     def __init__(self, db: Session):
         self.db = db
         self.index_service = IndexService(db)
+        # 初始化MarkItDown实例
+        self.markitdown = MarkItDown()
 
-    def create_document(self, document: DocumentCreate) -> Document:
+    async def create_document(self, document: DocumentCreate) -> Document:
         """创建文档记录并将其添加到索引中"""
         db_document = Document(
             filename=document.filename,
             content=document.content,
-            _metadata=document.metadata or {}
+            _metadata=document._metadata or {}
         )
         self.db.add(db_document)
         self.db.commit()
         self.db.refresh(db_document)
         
         # 将文档添加到索引中
-        self.index_service.add_document(db_document)
+        await self.index_service.add_document(db_document)
         
         return db_document
 
@@ -51,14 +53,15 @@ class DocumentService:
         self.db.commit()
         return True
 
-    def process_markdown_file(self, file_path: str, filename: str) -> Document:
+    async def process_markdown_file(self, file_path: str, filename: str) -> Document:
         """处理Markdown文件并创建文档"""
         # 使用Markitdown解析Markdown文件
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
         
-        # 解析Markdown内容
-        parsed_content = markitdown.parse(content)
+        # 使用MarkItDown转换文件
+        result = self.markitdown.convert(file_path)
+        parsed_content = result.text_content
         
         # 创建文档
         document = DocumentCreate(
@@ -67,9 +70,9 @@ class DocumentService:
             metadata={"parsed_content": parsed_content}
         )
         
-        return self.create_document(document)
+        return await self.create_document(document)
 
-    def process_text_file(self, file_path: str, filename: str) -> Document:
+    async def process_text_file(self, file_path: str, filename: str) -> Document:
         """处理文本文件并创建文档"""
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
@@ -81,5 +84,5 @@ class DocumentService:
             metadata={}
         )
         
-        return self.create_document(document)
+        return await self.create_document(document)
 

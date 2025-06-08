@@ -13,13 +13,13 @@ const api = axios.create({
 export const documentsApi = {
   // 获取所有文档
   getDocuments: async () => {
-    const response = await api.get('/documents');
+    const response = await api.get('/documents/');
     return response.data;
   },
 
   // 获取单个文档
   getDocument: async (id: number) => {
-    const response = await api.get(`/documents/${id}`);
+    const response = await api.get(`/documents/${id}/`);
     return response.data;
   },
 
@@ -28,7 +28,7 @@ export const documentsApi = {
     const formData = new FormData();
     formData.append('file', file);
     
-    const response = await api.post('/documents/upload', formData, {
+    const response = await api.post('/documents/upload/', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -38,7 +38,7 @@ export const documentsApi = {
 
   // 删除文档
   deleteDocument: async (id: number) => {
-    const response = await api.delete(`/documents/${id}`);
+    const response = await api.delete(`/documents/${id}/`);
     return response.data;
   },
 };
@@ -47,7 +47,7 @@ export const documentsApi = {
 export const queryApi = {
   // 执行查询
   query: async (query: string, top_k: number = 5, rerank: boolean = true) => {
-    const response = await api.post('/query', {
+    const response = await api.post('/query/', {
       query,
       top_k,
       rerank,
